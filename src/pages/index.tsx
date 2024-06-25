@@ -5,10 +5,10 @@ import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import styles from "./index.module.css";
 import HomepageFeatures from "@site/src/components/HomepageFeatures";
-import logo from "@site/static/img/asuka.jpg";
-import noise from "@site/static/img/noise.png";
+import avatarPath from "@site/static/img/asuka.jpg";
+import noisePath from "@site/static/img/noise.png";
 
-console.log(logo);
+// console.log(typeof logo); // string
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
 
@@ -58,14 +58,14 @@ function HomepageHeader() {
       }
      `;
 
-      const [banana, xeno] = await Promise.all([
-        loadImage(logo),
-        loadImage(noise),
+      const [avatarElement, noiseElement] = await Promise.all([
+        createImageElement(avatarPath),
+        createImageElement(noisePath),
       ]);
-      const aka = new WebGL(document.querySelector("canvas"));
-      const { gl } = aka;
+      const webGLManager = new WebGLManager(document.querySelector("canvas"));
+      const { gl } = webGLManager;
 
-      aka
+      webGLManager
         .init(vsSource, fsSource)
         .loadBuffer(
           new Float32Array([
@@ -75,9 +75,9 @@ function HomepageHeader() {
         )
         .setAttrib("aPosition", 2, gl.FLOAT, false, 16, 0)
         .setAttrib("aUV", 2, gl.FLOAT, false, 16, 8)
-        .loadTexture(banana)
+        .loadTexture(avatarElement)
         .setUniform("uTexture1", "uniform1i", 0)
-        .loadTexture(xeno)
+        .loadTexture(noiseElement)
         .setUniform("uTexture2", "uniform1i", 1);
 
       let value = 0.0;
@@ -85,7 +85,7 @@ function HomepageHeader() {
       draw();
 
       function draw() {
-        const uniform2 = gl.getUniformLocation(aka.program, "uVar");
+        const uniform2 = gl.getUniformLocation(webGLManager.program, "uVar");
         gl.uniform1f(uniform2, reverse ? (value -= 0.01) : (value += 0.01));
 
         if (value >= 1) {
@@ -96,7 +96,7 @@ function HomepageHeader() {
           reverse = false;
         }
 
-        aka.draw(aka.gl.TRIANGLES, 6);
+        webGLManager.draw(webGLManager.gl.TRIANGLES, 6);
 
         requestAnimationFrame(draw);
       }
@@ -106,12 +106,12 @@ function HomepageHeader() {
   return (
     <header className={clsx(styles.heroBanner)}>
       <div className="container">
-        {/* <img src={logo} style={{width: 280, borderRadius: '50%'}} />  */}
+        {/* <img src={avatarPath} style={{width: 280, borderRadius: '50%'}} />  */}
         <canvas width="300" height="300" style={{ borderRadius: '50%' }} />
         <h1 className="hero__title">{siteConfig.title}</h1>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <div className={styles.buttons}>
-          <Link className="button button--secondary button--lg" to="/docs/HTML">
+          <Link className="button button--secondary button--lg" to="/docs/intro">
             前端博客 →
           </Link>
         </div>
@@ -135,37 +135,35 @@ export default function Home() {
   );
 }
 
-class WebGL {
-  gl;
-  program;
-  vs;
-  fs;
-  buffer;
+class WebGLManager {
+  gl: WebGLRenderingContext;
+  program: WebGLProgram;
+  vShader: WebGLShader;         //v==vertex
+  fShader: WebGLShader;  //f==fragment
+  buffer: WebGLBuffer;
   textures = [];
 
-  constructor(el) {
-    if (el instanceof HTMLCanvasElement) {
-      this.gl = el.getContext("webgl");
-      this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
-
-      return this;
-    } else {
-      throw new Error("please pass canvas element");
-    }
+  constructor(canvasElement: HTMLCanvasElement) {
+    this.gl = canvasElement.getContext("webgl");
+    this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
   }
+  /**
+   * @param vShaderSource vertexShaderSource
+   * @param fShaderSource fragmentShaderSource
+   */
+  init(vShaderSource:string, fShaderSource:string) {
+    
+    const vShader = (this.vShader = this.gl.createShader(this.gl.VERTEX_SHADER));
+    this.gl.shaderSource(vShader, vShaderSource);
+    this.gl.compileShader(vShader);
 
-  init(vsSource, fsSource) {
-    const vs = (this.vs = this.gl.createShader(this.gl.VERTEX_SHADER));
-    this.gl.shaderSource(vs, vsSource);
-    this.gl.compileShader(vs);
-
-    const fs = (this.fs = this.gl.createShader(this.gl.FRAGMENT_SHADER));
-    this.gl.shaderSource(fs, fsSource);
-    this.gl.compileShader(fs);
+    const fShader = (this.fShader = this.gl.createShader(this.gl.FRAGMENT_SHADER));
+    this.gl.shaderSource(fShader, fShaderSource);
+    this.gl.compileShader(fShader);
 
     const program = (this.program = this.gl.createProgram());
-    this.gl.attachShader(program, vs);
-    this.gl.attachShader(program, fs);
+    this.gl.attachShader(program, vShader);
+    this.gl.attachShader(program, fShader);
     this.gl.linkProgram(program);
     this.gl.useProgram(program);
 
@@ -236,21 +234,21 @@ class WebGL {
     return this;
   }
 
-  draw(type, count) {
+  draw(type: GLenum, count: GLsizei) {
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     this.gl.clearColor(0, 0, 0, 0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     this.gl.drawArrays(type, 0, count);
   }
 
-  then(callback) {
+  then(callback: Function) {
     callback.call(this);
 
     return this;
   }
 }
 
-function loadImage(path) {
+function createImageElement(path: string): Promise<HTMLImageElement> {
   return new Promise((resolve) => {
     const image = new Image();
     image.src = path;
