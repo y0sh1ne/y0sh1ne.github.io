@@ -4,11 +4,9 @@ import Layout from "@theme/Layout";
 import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import styles from "./index.module.css";
-import HomepageFeatures from "@site/src/components/HomepageFeatures";
 import avatarPath from "@site/static/img/asuka.jpg";
 import noisePath from "@site/static/img/noise.png";
 
-// console.log(typeof logo); // string
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
 
@@ -123,13 +121,10 @@ function HomepageHeader() {
 export default function Home() {
   const { siteConfig } = useDocusaurusContext();
   return (
-    <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />"
-    >
+    <Layout title={`Hello from ${siteConfig.title}`} description="Description will go into a meta tag in <head />">
       <HomepageHeader />
       <main>
-        <HomepageFeatures />
+        <Features />
       </main>
     </Layout>
   );
@@ -151,8 +146,8 @@ class WebGLManager {
    * @param vShaderSource vertexShaderSource
    * @param fShaderSource fragmentShaderSource
    */
-  init(vShaderSource:string, fShaderSource:string) {
-    
+  init(vShaderSource: string, fShaderSource: string) {
+
     const vShader = (this.vShader = this.gl.createShader(this.gl.VERTEX_SHADER));
     this.gl.shaderSource(vShader, vShaderSource);
     this.gl.compileShader(vShader);
@@ -257,3 +252,65 @@ function createImageElement(path: string): Promise<HTMLImageElement> {
     };
   });
 }
+
+//#region FeaturesField
+type FeatureItem = {
+  title: string;
+  description: JSX.Element;
+};
+
+const FeatureList: FeatureItem[] = [
+{
+  title: 'Support Me',
+  description: (
+    <>
+      Give me a star at here <a target="_blank" rel="noopener noreferrer" href="https://github.com/y0sh1ne/y0sh1ne.github.io">GitHub</a>
+    </>
+  ), 
+},
+{
+  title: 'About Me',
+  description: (
+    <>
+      Master Student now
+    </>
+  ),
+},
+{
+  title: 'Contact Me',
+  description: (
+    <>
+      <a href="mailto:axin.she@foxmail.com" target="_blank"><></></a>
+    </>
+  ),
+},
+];
+
+function Feature({title, description}: FeatureItem) {
+return (
+  <div className={clsx('col col--4')}>
+    <div className="text--center">
+
+    </div>
+    <div className="text--center padding-horiz--md">
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  </div>
+);
+}
+
+function Features(): JSX.Element {
+return (
+  <section className={styles.features}>
+    <div className="container">
+      <div className="row">
+        {FeatureList.map((item, i) => (
+          <Feature key={i} {...item} />
+        ))}
+      </div>
+    </div>
+  </section>
+);
+}
+//#endregion
